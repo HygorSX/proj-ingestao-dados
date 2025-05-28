@@ -1,0 +1,8 @@
+python-dotenv
+requests
+pandas
+google-cloud-bigquery
+
+apache-airflow-providers-google
+
+

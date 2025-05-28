@@ -1,0 +1,16 @@
+_pycache__/
+*.py[cod]
+*.class
+*.egg-info/
+.env
+.venv/
+dist/
+build/
+*.log
+
+config/gcp_credentials.json
+
+.vscode/
+.idea/
+
+data/
