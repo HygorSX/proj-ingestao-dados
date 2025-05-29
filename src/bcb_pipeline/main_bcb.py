@@ -7,7 +7,7 @@ from google.cloud import bigquery
 from src.common.utils import setup_logging 
 from src.bcb_pipeline.extractor import fetch_bcb_series_data
 from src.bcb_pipeline.transformer import transform_bcb_data
-from src.bcb_pipeline.loader import load_df_to_staging_table, merge_data_to_final_table
+from src.common.bigquery_operations import load_df_to_staging_table, merge_data_to_final_table
 
 setup_logging()      
 logger = logging.getLogger(__name__)

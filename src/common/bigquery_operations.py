@@ -1,10 +1,40 @@
-import pandas as pd
 import logging
+import pandas as pd
 from google.cloud import bigquery
-import os
-from src.common.utils import ensure_bigquery_dataset_exists
+from google.cloud.exceptions import NotFound
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger(__name__)  
+
+def ensure_bigquery_dataset_exists(
+    client: bigquery.Client,
+    dataset_id: str,
+    project_id: str,
+    location: str = "southamerica-east1" # Localização padrão para o Brasil
+):
+    
+    full_dataset_id = f"{project_id}.{dataset_id}"
+    dataset_ref = client.dataset(dataset_id) 
+
+    try:
+        client.get_dataset(dataset_ref)
+        logger.info(f"Dataset {full_dataset_id} já existe.")
+
+    except NotFound:
+        logger.info(f"Dataset {full_dataset_id} não encontrado. Criando na localização {location}...")
+        dataset_object_to_create = bigquery.Dataset(dataset_ref)
+        dataset_object_to_create.location = location
+        
+        try:
+            client.create_dataset(dataset_object_to_create, timeout=30)
+            logger.info(f"Dataset {full_dataset_id} criado com sucesso na localização {location}.")
+
+        except Exception as e:
+            logger.error(f"Falha ao criar o dataset {full_dataset_id} na localização {location}: {e}")
+            raise
+
+    except Exception as e:
+        logger.error(f"Erro inesperado ao verificar a existência do dataset {full_dataset_id}: {e}")
+        raise
 
 def load_df_to_staging_table(
     df: pd.DataFrame,

@@ -57,25 +57,15 @@ def transform_ibge_data(
     try:
         df_out = pd.DataFrame()
         
-        if 'D2C' not in df.columns:
-            logger.error("Coluna 'D2C' (esperada para código do período) não encontrada. Abortando transformação.")
-            return pd.DataFrame()
         df_out['data_referencia'] = df['D2C'].apply(_parse_ibge_period_to_date)
-
-        if 'V' not in df.columns:
-            logger.error("Coluna 'V' (esperada para valor) não encontrada. Abortando transformação.")
-            return pd.DataFrame()
-        
         df_out['valor_serie'] = df['V'].replace('...', np.nan)
         df_out['valor_serie'] = pd.to_numeric(df_out['valor_serie'], errors='coerce')
-
         df_out['localidade_codigo'] = df.get('NC', df.get('D1C', pd.Series([None] * len(df))))
         df_out['localidade_nome'] = df.get('D1N', pd.Series(["Brasil"] * len(df)))
-
         df_out['unidade_medida'] = df.get('MN', pd.Series([None] * len(df)))
-
+        
         df_out['codigo_agregado'] = aggregate_code_meta
-        df_out['codigo_variavel'] = variable_code_meta
+        df_out['codigo_serie'] = int(variable_code_meta)
         df_out['nome_variavel_principal'] = variable_name_meta
         
         original_rows = len(df_out)
@@ -84,7 +74,8 @@ def transform_ibge_data(
             logger.warning(f"{original_rows - len(df_out)} linhas foram removidas devido a data_referencia ou valor_serie nulos após conversão.")
 
         final_columns = [
-            'data_referencia', 'codigo_agregado', 'codigo_variavel', 
+            'data_referencia', 'codigo_agregado', 
+            'codigo_serie',
             'nome_variavel_principal', 'valor_serie', 'unidade_medida', 
             'localidade_codigo', 'localidade_nome'
         ]
@@ -96,6 +87,8 @@ def transform_ibge_data(
         df_out = df_out[final_columns]
 
         logger.info(f"Transformações concluídas para agregado {aggregate_code_meta}, variável {variable_code_meta}. {len(df_out)} registros válidos processados.")
+        # Elimina duplicatas para garantir que cada (data_referencia, codigo_serie) seja único
+        df_out.drop_duplicates(subset=["data_referencia", "codigo_serie"], keep="last", inplace=True)
         return df_out
 
     except KeyError as e:

@@ -6,7 +6,7 @@ from datetime import date
 from google.cloud import bigquery
 
 from src.common.utils import setup_logging, ensure_bigquery_dataset_exists
-from src.bcb_pipeline.loader import load_df_to_staging_table, merge_data_to_final_table
+from src.common.bigquery_operations import load_df_to_staging_table, merge_data_to_final_table
 
 setup_logging()
 logger = logging.getLogger(__name__)
