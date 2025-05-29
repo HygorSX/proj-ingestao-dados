@@ -2,6 +2,7 @@ import logging
 import os
 from datetime import datetime, timedelta
 from dotenv import load_dotenv
+from google.cloud import bigquery
 
 from src.common.utils import setup_logging 
 from src.bcb_pipeline.extractor import fetch_bcb_series_data
@@ -74,7 +75,7 @@ def run_full_bcb_pipeline_for_series(
             logger.warning(f"Falha ao tentar deletar a tabela de staging {staging_table_id}: {e}")
         # Continua mesmo se a deleção da staging falhar, pois o MERGE principal foi bem-sucedido.
     # --- FIM DA LÓGICA DE DELEÇÃO ---
-    
+
     elif not success_merge:
         logger.error(f"Falha na operação MERGE para a tabela final de {series_name}. A tabela de staging {staging_table_id} será mantida para depuração.")
         return False
