@@ -5,22 +5,18 @@ from datetime import date
 
 from google.cloud import bigquery
 
-# Importa as funções do loader e a de criação de dataset
 from src.common.utils import setup_logging, ensure_bigquery_dataset_exists
 from src.bcb_pipeline.loader import load_df_to_staging_table, merge_data_to_final_table
 
-# Configura o logging para este script de teste
 setup_logging()
 logger = logging.getLogger(__name__)
 
 # --- CONFIGURAÇÕES DE TESTE ---
-# !!! IMPORTANTE: Substitua 'SEU_PROJECT_ID_AQUI' pelo ID do seu projeto GCP !!!
-# Você também pode carregar isso de uma variável de ambiente, ex: os.getenv("GCP_PROJECT_ID")
 TEST_PROJECT_ID = os.getenv("GCP_TEST_PROJECT_ID", "ingestao-dados-publicos") 
-TEST_DATASET_ID = "test_bcb_pipeline_dataset"  # Dataset exclusivo para este teste
+TEST_DATASET_ID = "test_bcb_pipeline_dataset" 
 TEST_STAGING_TABLE_ID_PREFIX = "test_staging_serie_"
 TEST_FINAL_TABLE_ID_PREFIX = "test_final_serie_"
-TEST_GCP_LOCATION = "southamerica-east1" # Ou a localização do seu projeto
+TEST_GCP_LOCATION = "southamerica-east1" 
 
 # Função auxiliar para obter o número de linhas em uma tabela
 def get_table_row_count(client: bigquery.Client, project_id: str, dataset_id: str, table_id: str) -> int:
