@@ -1,79 +1,65 @@
+import pytest
+from unittest.mock import patch, MagicMock
 import pandas as pd
-import logging
 
-from src.common.utils import setup_logging
 from src.ibge_pipeline.extractor import fetch_ibge_aggregate_data
 
-setup_logging()
-logger = logging.getLogger(__name__)
 
-def run_single_extraction_test(
-    indicator_name: str,
-    aggregate_code: str,
-    variable_codes: str,
-    periods: str,
-    localities_specifier: str = "N1[all]" 
-):
-    logger.info(f"\n--- Testando Extração para: {indicator_name} ---")
-    logger.info(f"Agregado: {aggregate_code}, Variável(eis): {variable_codes}, Períodos: {periods}, Localidades: {localities_specifier}")
+@patch("src.ibge_pipeline.extractor.requests.get")
+def test_ibge_extractor_success(mock_get):
+    mock_response = MagicMock()
+    mock_response.status_code = 200
+    mock_response.text = '[{"id":1,"variavel":"IPCA"}]'
+    mock_response.json.return_value = [{"id": 1, "variavel": "IPCA"}]
+    mock_get.return_value = mock_response
 
-    df = fetch_ibge_aggregate_data(
-        aggregate_code=aggregate_code,
-        variable_codes=variable_codes,
-        periods=periods,
-        localities_specifier=localities_specifier
-    )
+    df = fetch_ibge_aggregate_data(aggregate_code="1737", variable_codes="63", periods="202301", localities_specifier="N1[all]")
+    assert not df.empty
+    assert isinstance(df, pd.DataFrame)
+    assert "variavel" in df.columns
 
-    assert df is not None, f"{indicator_name}: A função retornou None, esperava-se um DataFrame."
-    if df.empty:
-        logger.warning(f"{indicator_name}: Nenhum dado retornado para os parâmetros fornecidos. Verifique os parâmetros ou a disponibilidade dos dados na API.")
-    else:
-        logger.info(f"{indicator_name}: Dados extraídos com sucesso ({len(df)} linhas).")
-        print(f"\n{indicator_name} - Primeiras linhas do DataFrame:")
-        print(df.head())
-        print(f"\n{indicator_name} - Informações do DataFrame:")
-        df.info(verbose=True, show_counts=True)
-        
-        expected_data_cols = ['V', 'D3C', 'D2C', 'D1C'] 
-        
-        for col in expected_data_cols:
-            assert col in df.columns, f"{indicator_name}: Coluna de dados esperada '{col}' não encontrada. Colunas: {df.columns.tolist()}"
-        logger.info(f"{indicator_name}: Verificação de colunas de dados ('V', 'D3C', 'D2C', 'D1C') - Aprovada.")
-    logger.info(f"--- Teste para {indicator_name} concluído ---")
-    return df
 
-def run_all_ibge_extractor_tests():
-    logger.info("===== Iniciando testes para ibge_pipeline.extractor =====")
+@patch("src.ibge_pipeline.extractor.requests.get")
+def test_ibge_extractor_empty_response_text(mock_get):
+    mock_response = MagicMock()
+    mock_response.status_code = 200
+    mock_response.text = "[]"
+    mock_get.return_value = mock_response
 
-    run_single_extraction_test(
-        indicator_name="IPCA (Variação Mensal)",
-        aggregate_code="1737",
-        variable_codes="63",
-        periods="202410-202412" 
-    )
+    df = fetch_ibge_aggregate_data("1737", "63")
+    assert isinstance(df, pd.DataFrame)
+    assert df.empty
 
-    run_single_extraction_test(
-        indicator_name="Taxa de Desocupação (PNAD Contínua Trimestral)",
-        aggregate_code="4099",
-        variable_codes="4099",
-        periods="202401,202402" 
-    )
 
-    run_single_extraction_test(
-        indicator_name="PIB Anual (Valores Correntes)",
-        aggregate_code="5938",
-        variable_codes="37",
-        periods="2020-2021" 
-    )
+@patch("src.ibge_pipeline.extractor.requests.get")
+def test_ibge_extractor_empty_json(mock_get):
+    mock_response = MagicMock()
+    mock_response.status_code = 200
+    mock_response.text = '[  ]'
+    mock_response.json.return_value = []
+    mock_get.return_value = mock_response
 
-    run_single_extraction_test(
-        indicator_name="População Estimada Anual",
-        aggregate_code="6579",
-        variable_codes="9324",
-        periods="2020-2021" 
-    )
+    df = fetch_ibge_aggregate_data("1737", "63")
+    assert df.empty
 
-    logger.info("\n===== Testes para ibge_pipeline.extractor concluídos =====")
 
-if __name__ == "__main__":
-    run_all_ibge_extractor_tests()
+@patch("src.ibge_pipeline.extractor.requests.get")
+def test_ibge_extractor_json_decode_error(mock_get):
+    mock_response = MagicMock()
+    mock_response.status_code = 200
+    mock_response.text = "invalid"
+    mock_response.json.side_effect = ValueError("Invalid JSON")
+    mock_get.return_value = mock_response
+
+    df = fetch_ibge_aggregate_data("1737", "63")
+    assert df.empty
+
+
+@patch("src.ibge_pipeline.extractor.requests.get")
+def test_ibge_extractor_http_error(mock_get):
+    mock_response = MagicMock()
+    mock_response.raise_for_status.side_effect = Exception("Erro HTTP")
+    mock_get.return_value = mock_response
+
+    df = fetch_ibge_aggregate_data("1737", "63")
+    assert df.empty

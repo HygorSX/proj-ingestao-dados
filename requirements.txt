@@ -2,7 +2,7 @@ python-dotenv
 requests
 pandas
 google-cloud-bigquery
-
+pytest
 apache-airflow-providers-google
 
 

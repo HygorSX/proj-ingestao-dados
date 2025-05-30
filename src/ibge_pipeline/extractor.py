@@ -3,66 +3,70 @@ import pandas as pd
 import logging
 from typing import Optional, Union, List
 
+from src.common.utils import setup_logging
+
+logger = setup_logging()
 logger = logging.getLogger(__name__)
 
-IBGE_AGGREGATE_API_BASE_URL = "https://servicodados.ibge.gov.br/api/v3/agregados" 
+IBGE_AGGREGATE_API_BASE_URL = "https://servicodados.ibge.gov.br/api/v3/agregados"
+
 
 def fetch_ibge_aggregate_data(
     aggregate_code: str,
     variable_codes: Union[str, List[str]],
-    periods: str = "all",  
-    localities_specifier: str = "N1[all]" 
+    periods: str = "all",
+    localities_specifier: str = "N1[all]"
 ) -> pd.DataFrame:
     
-    if isinstance(variable_codes, list):
-        variables_path_segment = "|".join(variable_codes)
-    else:
-        variables_path_segment = str(variable_codes)
-
-    url_path = f"{aggregate_code}/periodos/{periods}/variaveis/{variables_path_segment}"
+    variables_segment = "|".join(variable_codes) if isinstance(variable_codes, list) else str(variable_codes)
+    url_path = f"{aggregate_code}/periodos/{periods}/variaveis/{variables_segment}"
     request_url = f"{IBGE_AGGREGATE_API_BASE_URL}/{url_path}"
 
     params = {
         "localidades": localities_specifier,
-        "view": "flat" 
+        "view": "flat"
     }
 
-    logger.info(f"Requisitando dados da API de Agregados IBGE: {request_url} com parâmetros: {params}")
+    logger.info(f"[IBGE] Requisição: {request_url} | Parâmetros: {params}")
 
     try:
         response = requests.get(request_url, params=params, timeout=90)
         response.raise_for_status()
 
         if not response.text or response.text == "[]":
-            logger.warning(f"Nenhum dado (resposta vazia '[]') retornado pela API IBGE para a consulta: {request_url} com params {params}")
+            logger.warning(f"[IBGE] Resposta vazia da API: {request_url}")
             return pd.DataFrame()
 
         data_json = response.json()
-
         if not data_json:
-            logger.warning(f"Nenhum dado (JSON vazio) retornado pela API IBGE para a consulta: {request_url} com params {params}")
+            logger.warning(f"[IBGE] JSON vazio retornado da API: {request_url}")
             return pd.DataFrame()
 
         df = pd.DataFrame(data_json)
-        
-        logger.info(f"Dados da API de Agregados IBGE extraídos com sucesso. {len(df)} registros retornados.")
+        logger.info(f"[IBGE] {len(df)} registros retornados para o agregado {aggregate_code}.")
         return df
 
-    except requests.exceptions.HTTPError as http_err:
-        logger.error(f"Erro HTTP ao buscar dados da API IBGE ({request_url}, params: {params}): {http_err}")
-        logger.error(f"Conteúdo da resposta: {response.text[:500] if response and hasattr(response, 'text') else 'N/A'}")
+    except requests.exceptions.HTTPError as e:
+        logger.exception(f"[IBGE] HTTPError para {request_url}: {e}")
+        _log_response_content(response)
 
-    except requests.exceptions.ConnectionError as conn_err:
-        logger.error(f"Erro de conexão ao buscar dados da API IBGE ({request_url}, params: {params}): {conn_err}")
+    except requests.exceptions.ConnectionError as e:
+        logger.exception(f"[IBGE] ConnectionError para {request_url}: {e}")
 
-    except requests.exceptions.Timeout as timeout_err:
-        logger.error(f"Timeout ao buscar dados da API IBGE ({request_url}, params: {params}): {timeout_err}")
+    except requests.exceptions.Timeout as e:
+        logger.exception(f"[IBGE] Timeout para {request_url}: {e}")
 
-    except ValueError as json_err:
-        logger.error(f"Erro ao decodificar JSON da resposta da API IBGE ({request_url}, params: {params}): {json_err}")
-        logger.error(f"Conteúdo da resposta: {response.text[:500] if response and hasattr(response, 'text') else 'N/A'}")
+    except ValueError as e:
+        logger.exception(f"[IBGE] Erro ao decodificar JSON: {e}")
+        _log_response_content(response)
 
     except Exception as e:
-        logger.error(f"Erro inesperado ao buscar dados da API IBGE ({request_url}, params: {params}): {e}")
-        
+        logger.exception(f"[IBGE] Erro inesperado ao requisitar {request_url}: {e}")
+
     return pd.DataFrame()
+
+
+def _log_response_content(response: Optional[requests.Response]) -> None:
+    """Loga os primeiros caracteres da resposta da API para debug."""
+    if response is not None and hasattr(response, 'text'):
+        logger.debug(f"[IBGE] Conteúdo da resposta: {response.text[:500]}")
