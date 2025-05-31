@@ -166,7 +166,7 @@ SELECT
   EXTRACT(MONTH FROM data_referencia) AS mes,
   COUNT(*) AS registros,
   AVG(valor_serie) AS media_ipca
-FROM `ingestao-dados-publicos.dados_publicos_ibge.ipca_variacao_mensal_brasil`
+FROM `ingestao-dados-publicos.dados_publicos_ibge.ibge_ipca_variacao_mensal_brasil`
 GROUP BY ano, mes
 ORDER BY ano DESC, mes DESC
 LIMIT 10;
