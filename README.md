@@ -26,7 +26,7 @@ A solução foi desenvolvida com foco em **modularidade, boas práticas de engen
 ```plaintext
 ingestao_dados_publicos/
 ├── config/
-│   └── gcp_credentials.json         # Chave da Service Account (NÃO versionar)
+│   └── gcp_credentials.json         # Chave da Service Account
 ├── dags/
 │   ├── ibge_pipeline_dag.py         # DAG Airflow - IBGE
 │   ├── bcb_pipeline_dag.py          # DAG Airflow - BCB
@@ -37,12 +37,10 @@ ingestao_dados_publicos/
 │   ├── ibge_pipeline/
 │   │   ├── extractor.py
 │   │   ├── transformer.py
-│   │   ├── loader.py
 │   │   └── main_ibge.py
 │   └── bcb_pipeline/
 │       ├── extractor.py
 │       ├── transformer.py
-│       ├── loader.py
 │       └── main_bcb.py
 ├── notebooks/                       # Análises exploratórias (opcional)
 ├── tests/                           # Testes unitários
