@@ -1,7 +1,6 @@
 import logging
-import os
+from airflow.models import Variable
 from datetime import datetime, timedelta
-from dotenv import load_dotenv
 from google.cloud import bigquery
 
 from src.common.utils import setup_logging
@@ -14,11 +13,10 @@ from src.common.bigquery_operations import (
 
 setup_logging()
 logger = logging.getLogger(__name__)
-load_dotenv()
 
-GCP_PROJECT_ID = os.getenv("GCP_PROJECT_ID")
-BIGQUERY_DATASET_BCB = os.getenv("BIGQUERY_DATASET_BCB", "dados_publicos_bcb")
-GCP_LOCATION = os.getenv("GCP_LOCATION", "southamerica-east1")
+GCP_PROJECT_ID = Variable.get("GCP_PROJECT_ID")
+BIGQUERY_DATASET_BCB = Variable.get("BIGQUERY_DATASET_BCB", default_var="dados_publicos_bcb")
+GCP_LOCATION = Variable.get("GCP_LOCATION", default_var="southamerica-east1")
 
 SERIES_TO_PROCESS = [
     {"name": "selic_diaria", "code": 11},
